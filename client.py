@@ -22,14 +22,14 @@ sock_service.connect((SERVER_ADDRESS, SERVER_PORT))  #socket che invia la richie
 print("Connesso a " + str((SERVER_ADDRESS, SERVER_PORT)))  #comando per verificare che  il collegamento  sia in funzione 
 while True:
     try:
-        dati = input("Inserisci i dati da inviare (0 per terminare la connessione): ") #utente inserisce il numero di richieste 
+        dati = input("Inserisci i dati dell'operazione (ko per terminare la connessione): ") #utente inserisce il numero di richieste 
     except EOFError:
         print("\nOkay. Exit")
         break
     if not dati:
         print("Non puoi inviare una stringa vuota!") #controllo che non sia stringa vuota 
         continue
-    if dati == '0':  
+    if dati == 'ko':  
         print("Chiudo la connessione con il server!") #quando utente inserisce 0 la connessione termina 
         break
     
