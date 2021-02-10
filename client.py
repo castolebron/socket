@@ -1,51 +1,60 @@
 #!/usr/bin/env python3
 
 
-input_string = 'Hello' 
-print(type(input_string))
-input_bytes_encoded = input_string.encode()
-print(type(input_bytes_encoded))
-print(input_bytes_encoded)
-output_string=input_bytes_encoded.decode()
-print(type(output_string))
-print(output_string)
+#input_string = 'Hello'
+#print(type(input_string))
+#input_bytes_encoded = input_string.encode()
+#print(type(input_bytes_encoded))
+#print(input_bytes_encoded)
+#output_string=input_bytes_encoded.decode()
+#print(type(output_string))
+#print(output_string)
 
-import socket  #importo la libreria sokcet 
+import socket
+import sys
 
-SERVER_ADDRESS = '127.0.0.1'  #indirizzo server 
-SERVER_PORT = 22224           #porta server 
+SERVER_ADDRESS = '127.0.0.1'
+SERVER_PORT = 22224
 
-sock_service = socket.socket()  #socket che crea la richiesta del serivizio 
-
-sock_service.connect((SERVER_ADDRESS, SERVER_PORT))  #socket che invia la richiesta del servizio  e creo la richiesta 
-
-print("Connesso a " + str((SERVER_ADDRESS, SERVER_PORT)))  #comando per verificare che  il collegamento  sia in funzione 
-while True:
-    try:
-        dati = input("Inserisci i dati dell'operazione (ko per terminare la connessione): ") #utente inserisce il numero di richieste 
-    except EOFError:
-        print("\nOkay. Exit")
-        break
-    if not dati:
-        print("Non puoi inviare una stringa vuota!") #controllo che non sia stringa vuota 
-        continue
-    if dati == 'ko':  
-        print("Chiudo la connessione con il server!") #quando utente inserisce 0 la connessione termina 
-        break
+#La funzione riceve la socket connessa al server e la utilizza per richiedere il servizio
+def invia_comandi(sock_service):
+    while True:
+        try: #try per evitare vari possibili errori
+            dati = input("Inserisci i dati da inviare (ko per terminare la connessione): ")#inserimento dati in caso non trova errori
+        except EOFError: #se c'è un errore
+            print("\nOkay. Exit")# stampa questo 
+            break #chiusura
+        if not dati:# se non vengono insierriti dati 
+            print("Non puoi inviare una stringa vuota!")# meaasggio
+            continue# non chiude il ciclo ma lo continua comunque
+        if dati == 'ko':#se viene inserito ko
+            print("Chiudo la connessione con il server!")#il server si chiude
+            break#chiusura
     
-    dati = dati.encode() #vengono decodificati i dati
+        dati = dati.encode() #.encode trasforma la stringa in byte
+        sock_service.send(dati) #.send inivia a dati 
+        dati = sock_service.recv(2048) #.recv riceve i dati
 
-    sock_service.send(dati)  #dati vengono inviati 
+        if not dati:
+            print("Server non risponde. Exit")
+            break
+        
+        dati = dati.decode()
 
-    dati = sock_service.recv(2048) #riceve la risposta dal server 
+        print("Ricevuto dal server:")
+        print(dati + '\n')
+    sock_service.close()
+        
 
-    if not dati:  #controllo che server mi risponda 
-        print("Server non risponde. Exit")
-        break  #altrimenti 
+#la funzionme crea una socket(s) per la connessione con il server e la passa alla funzione invia_comandi(s)
+def connessione_server(address, port):
+    sock_service = socket.socket()
+    sock_service.connect((address, port))
+    print("Connesso a " + str((address, port)))
+    invia_comandi(sock_service)
     
-    dati = dati.decode() #i dati vengono decofificati 
 
-    print("Ricevuto dal server:") #leggo i dati a schermo
-    print(dati + '\n')
-
-sock_service.close()
+#Questo comando serve per far capire al codice se è stato eseguito come singolo script o se è stato chiamato come modulo da qualche altro
+#programma per usare le sue funzioni o classi
+if __name__ == '__main__':
+    connessione_server(SERVER_ADDRESS, SERVER_PORT)

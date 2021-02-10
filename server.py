@@ -1,63 +1,53 @@
+#!/usr/bin/env python3
 import socket
 
-SERVER_ADDRESS = '127.0.0.1'
 
+#è indifferente riempire questo campo o no
+SERVER_ADDRESS = '127.0.0.1'
+#numero porta, obbligatoriamente > 1024 perché le altre sono private
 SERVER_PORT = 22224
 
-sock_listen = socket.socket()
-
-sock_listen.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-
-sock_listen.bind((SERVER_ADDRESS, SERVER_PORT))
-
-sock_listen.listen(5)
-
-print("Server in ascolto su %s." % str((SERVER_ADDRESS, SERVER_PORT)))
-
-
-while True:
-    sock_service, addr_client = sock_listen.accept()
-    print("\nConnessione ricevuta da " + str(addr_client))
-    print("\nAspetto di ricevere i dati ")
-    contConn=0
+def ricevi_comandi(sock_listen):
     while True:
-        dati = sock_service.recv(2048)
-        contConn+=1
-        if not dati:
-            print("Fine dati dal client. Reset")
-            break
-        
-        dati = dati.decode()
-        print("Ricevuto: '%s'" % dati)
-        if dati=='0':
-            print("Chiudo la connessione con " + str(addr_client))
-            break
-        
-        #piu;1;4 e il server deve capire che deve fare la somma e darmi il risultato 
-        #uso il metodo split , che ogni volta che trova un carattere specificato separata man mano i dati 
-        dati=dati.split(";")  #piu;1;4 -> [piu][1][4]  diventa un array
-        risposta="" #dopo andremo a scrivere una risposta 
-        if dati[0]== "piu" or dati[0]== "meno" or dati[0]== "diviso" or dati[0]== "per":
-            dati[1]=int(dati[1]) #ho fatto il casting da string ad int
-            dati[2]=int(dati[2]) #""
-            risultato=0 
-            if dati[0]=="piu":
-                risultato=dati[1]+dati[2]
+        sock_service, addr_client = sock_listen.accept()
+        print("\nConnessione ricevuta da " + str(addr_client))
+        print("\nAspetto di ricevere i dati ")
+        contConn=0
+        while True:
+            dati = sock_service.recv(2048)
+            contConn+=1
+            if not dati:#se non riceve dati chiude la connessione
+                print("Fine dati dal client. Reset")
+                break
+            
+            dati = dati.decode()
+            print("Ricevuto: '%s'" % dati)
+            if dati=='ko':#se riceve ko chiude la connessione
+                print("Chiudo la connessione con " + str(addr_client))
+                break
+            operazione, primo, secondo = dati.split(";")#.split
+            #Vari if per selezionare l'operazione che il client ha inserito
+            if operazione == "piu":
+                risultato = int(primo) + int(secondo)
+            if operazione == "meno":
+                risultato = int(primo) - int(secondo)
+            if operazione == "per":
+                risultato = int(primo) * int(secondo)
+            if operazione == "diviso":
+                risultato = int(primo) / int(secondo)
+            
+            dati = "Il risultato dell'operazione: "+operazione +" tra "+primo+" e "+secondo+" è: "+str(risultato)#output
+            dati = dati.encode()
+            sock_service.send(dati)
+        sock_service.close()
 
-            elif dati[0]=="meno":
-                risultato=dati[1]-dati[2]
+def avvia_server(address, port):
+    sock_listen = socket.socket()
+    sock_listen.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    sock_listen.bind((address, port))
+    sock_listen.listen(5)#consente un massimo di 5 client in coda
+    print("Server in ascolto su %s." % str((address, port)))
+    ricevi_comandi(sock_listen)
 
-            elif dati[0]=="diviso":
-                risultato=dati[1]/dati[2]
-
-            else:
-                risultato=dati[1]*dati[2]  
-            risposta="il risultato dell'operazione "+str(dati[0])+ " tra "+ str(dati[1])+" e " + str(dati[2]) +" = "+str(risultato)
-        else:
-            risposta= "operazione non valida"
-
-        risposta = risposta.encode()
-
-        sock_service.send(risposta)
-
-    sock_service.close()
+if __name__ == '__main__':
+    avvia_server(SERVER_ADDRESS, SERVER_PORT)
