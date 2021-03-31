@@ -1,51 +1,37 @@
-#!/usr/bin/env python3
+import socket #importiamo il pacchetto socket
 
+SERVER_ADDRESS = '127.0.0.1' #indirizzo server
+SERVER_PORT = 22224 #porta server
 
-input_string = 'Hello' 
-print(type(input_string))
-input_bytes_encoded = input_string.encode()
-print(type(input_bytes_encoded))
-print(input_bytes_encoded)
-output_string=input_bytes_encoded.decode()
-print(type(output_string))
-print(output_string)
+sock_service = socket.socket() #crea la richiesta del servizio
 
-import socket  #importo la libreria sokcet 
+sock_service.connect((SERVER_ADDRESS, SERVER_PORT)) #invia la richiesta del servizio e crea la richiesta
 
-SERVER_ADDRESS = '127.0.0.1'  #indirizzo server 
-SERVER_PORT = 22224           #porta server 
-
-sock_service = socket.socket()  #socket che crea la richiesta del serivizio 
-
-sock_service.connect((SERVER_ADDRESS, SERVER_PORT))  #socket che invia la richiesta del servizio  e creo la richiesta 
-
-print("Connesso a " + str((SERVER_ADDRESS, SERVER_PORT)))  #comando per verificare che  il collegamento  sia in funzione 
+print("Connesso a " + str((SERVER_ADDRESS, SERVER_PORT))) #comando per verificare che il collegamento sia in funzione
+protocollo= ["SYN", "SYN ACK", "ACK with data", "ACK for data"]
+dati = '0'
 while True:
-    try:
-        dati = input("Inserisci i dati da inviare (0 per terminare la connessione): ") #utente inserisce il numero di richieste 
-    except EOFError:
-        print("\nOkay. Exit")
-        break
-    if not dati:
-        print("Non puoi inviare una stringa vuota!") #controllo che non sia stringa vuota 
-        continue
-    if dati == '0':  
-        print("Chiudo la connessione con il server!") #quando utente inserisce 0 la connessione termina 
-        break
+    print("Invio: " + dati + " - " + protocollo[int(dati)])
+    dati = dati.encode() #vengono codificati i dati
+
+    sock_service.send(dati) #vengono inviati i dati
     
-    dati = dati.encode() #vengono decodificati i dati
+    dati = sock_service.recv(2048) #aspetta la risposta dal server
 
-    sock_service.send(dati)  #dati vengono inviati 
-
-    dati = sock_service.recv(2048) #riceve la risposta dal server 
-
-    if not dati:  #controllo che server mi risponda 
+    if not dati: #controllo risposta del server
         print("Server non risponde. Exit")
-        break  #altrimenti 
+        break # se non risponde chiude il collegamento
     
-    dati = dati.decode() #i dati vengono decofificati 
+    dati = dati.decode() # se risponde vengono decodificati i dati
+    if dati=='3':
+        print("Ricevuto: " + dati + " - " + protocollo[int(dati)])
+        print("Termino connessione")
+        break
+    else:
+        print("Ricevuto: " + dati + " - " + protocollo[int(dati)])
+        dati=int(dati)+1
+        dati=str(dati)
 
-    print("Ricevuto dal server:") #leggo i dati a schermo
-    print(dati + '\n')
 
-sock_service.close()
+sock_service.close() #se l'utente inserisce 0 o se il server non risponde, si chiude la connessione
+#print("Termino connessione")
